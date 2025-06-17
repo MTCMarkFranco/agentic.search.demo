@@ -17,6 +17,7 @@ import time
 import json
 import textwrap
 from dotenv import load_dotenv
+import chainlit as cl
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from azure.core.credentials import AzureKeyCredential
 from azure.search.documents.indexes import SearchIndexClient
@@ -47,7 +48,6 @@ AGENT_NAME = os.getenv("AZURE_SEARCH_AGENT_NAME")
 AZURE_OPENAI_KNOWLEDGE_MODEL = os.getenv("AZURE_OPENAI_KNOWLEDGE_MODEL")
 AZURE_OPENAI_KNOWLEDGE_DEPLOYMENT = os.getenv("AZURE_OPENAI_KNOWLEDGE_DEPLOYMENT")
 
-
 # Azure OpenAI configuration
 AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 AZURE_OPENAI_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
@@ -55,18 +55,12 @@ AZURE_OPENAI_MODEL = os.getenv("AZURE_OPENAI_MODEL")
 AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION")
 AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
 
-
-# Hard-coded complex query for demo - multiple intents that agentic search should handle
-USER_QUERY = """What are the networking requirements for AKS when an enterprise hub and spoke 
-topology is being used and the Azure AI landing zone is in place? I need to understand 
-the specific configuration, security considerations, and integration patterns."""
-
-def create_knowledge_agent():
+async def create_knowledge_agent():
     """
     Create or update knowledge agent for agentic search using the Azure SDK
     The agent integrates with Azure OpenAI for query planning and understanding
     """
-    print("\n1. Setting up knowledge agent...")
+    await cl.Message(content="\n1. Setting up knowledge agent...").send()
     
     try:
         # Create index client for agent management - using API key authentication
@@ -94,11 +88,11 @@ def create_knowledge_agent():
         
         # Create or update the agent
         index_client.create_or_update_agent(agent)
-        print(f"   ✅ Knowledge agent '{AGENT_NAME}' created or updated successfully")
+        await cl.Message(content=f"   ✅ Knowledge agent '{AGENT_NAME}' created or updated successfully").send()
         return True
         
     except Exception as e:
-        print(f"   ❌ Error setting up knowledge agent: {e}")
+        await cl.Message(content=f"   ❌ Error setting up knowledge agent: {e}").send()
         return False
 
 def agentic_retrieval_search(query):

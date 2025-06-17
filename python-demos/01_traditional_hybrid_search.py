@@ -16,6 +16,7 @@ from azure.search.documents import SearchClient
 from azure.core.credentials import AzureKeyCredential
 from azure.identity import DefaultAzureCredential
 from openai import AzureOpenAI
+import chainlit as cl
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -28,9 +29,6 @@ OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
 OPENAI_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
 INDEX_NAME = "index-arch-data"
-
-# Hard-coded simple query for demo
-USER_QUERY = "What are the networking requirements for AKS?"
 
 def create_openai_client():
     """Create Azure OpenAI client for LLM-based categorization"""
@@ -50,26 +48,7 @@ def create_openai_client():
                 api_version="2024-12-01-preview"
             )
     except Exception as e:
-        print(f"Error creating OpenAI client: {e}")
-        raise
-    """Create Azure AI Search client with proper authentication"""
-    try:
-        # Prefer managed identity over API key for production
-        if SEARCH_API_KEY:
-            credential = AzureKeyCredential(SEARCH_API_KEY)
-            print("Using API key authentication")
-        else:
-            credential = DefaultAzureCredential()
-            print("Using managed identity authentication")
-        
-        return SearchClient(
-            endpoint=SEARCH_ENDPOINT,
-            index_name=INDEX_NAME,
-            credential=credential
-        )
-    except Exception as e:
-        print(f"Error creating search client: {e}")
-        raise
+        raise Exception(f"Error creating OpenAI client: {e}")
 
 def create_search_client():
     """Create Azure AI Search client with proper authentication"""
@@ -77,10 +56,8 @@ def create_search_client():
         # Prefer managed identity over API key for production
         if SEARCH_API_KEY:
             credential = AzureKeyCredential(SEARCH_API_KEY)
-            print("Using API key authentication")
         else:
             credential = DefaultAzureCredential()
-            print("Using managed identity authentication")
         
         return SearchClient(
             endpoint=SEARCH_ENDPOINT,
@@ -88,16 +65,15 @@ def create_search_client():
             credential=credential
         )
     except Exception as e:
-        print(f"Error creating search client: {e}")
-        raise
+        raise Exception(f"Error creating search client: {e}")
 
-def llm_category_mapping(query):
+async def llm_category_mapping(query):
     """
     LLM-powered category inference - more intelligent than manual keyword mapping
     Still shows traditional approach limitations vs agentic search
     """
     try:
-        print("   🤖 Using LLM for category detection...")
+        await cl.Message(content="   🤖 Using LLM for category detection...").send()
         
         openai_client = create_openai_client()
         
@@ -142,11 +118,11 @@ def llm_category_mapping(query):
         data = json.loads(json_string)
         categories = data.get("categories", ["Miscellaneous"])
         
-        print(f"   ✅ LLM detected categories: {categories}")
+        await cl.Message(content=f"   ✅ LLM detected categories: {categories}").send()
         return categories
         
     except Exception as e:
-        print(f"   ⚠️  LLM categorization failed, using fallback: {e}")
+        await cl.Message(content=f"   ⚠️  LLM categorization failed, using fallback: {e}").send()
         return manual_category_mapping_fallback(query)
 
 def manual_category_mapping_fallback(query):
@@ -188,7 +164,7 @@ def build_filter_expression(categories):
     category_filters = [f"category/any(c: c eq '{cat}')" for cat in categories]
     return " or ".join(category_filters)
 
-def generate_natural_language_answer(query, documents):
+async def generate_natural_language_answer(query, documents):
     """
     Generate a comprehensive natural language answer using Azure OpenAI
     based on the traditional search results
@@ -200,7 +176,7 @@ def generate_natural_language_answer(query, documents):
     Returns:
         str: Natural language answer or None if generation fails
     """
-    print(f"\n5. Generating natural language answer...")
+    await cl.Message(content=f"\n5. Generating natural language answer...").send()
     
     try:
         # Create Azure OpenAI client
@@ -261,39 +237,40 @@ def generate_natural_language_answer(query, documents):
         )
         
         natural_answer = completion.choices[0].message.content
-        print(f"   ✅ Generated natural language answer ({len(natural_answer)} characters)")
+        await cl.Message(content=f"   ✅ Generated natural language answer ({len(natural_answer)} characters)").send()
         
         return natural_answer
         
     except Exception as e:
-        print(f"   ⚠️  Natural language answer generation failed: {e}")
+        await cl.Message(content=f"   ⚠️  Natural language answer generation failed: {e}").send()
         return f"I found {len(documents)} relevant results for your query, but encountered an issue generating a comprehensive answer. Please review the search results above for detailed information."
 
-def traditional_hybrid_search(query):
+async def traditional_hybrid_search(query):
     """
     Traditional hybrid search implementation
     Requires manual category detection and filter construction
     """
-    print(f"\n=== Traditional Hybrid Search Demo ===")
-    print(f"Query: {query}")
+    await cl.Message(content=f"\n=== Traditional Hybrid Search Demo ===").send()
+    await cl.Message(content=f"Query: {query}").send()
     
     start_time = time.time()
     
-    try:        # Step 1: LLM-powered category inference (still traditional approach)
-        print("\n1. LLM-powered category detection...")
-        categories = llm_category_mapping(query)
-        print(f"   Detected categories: {categories}")
+    try:        
+        # Step 1: LLM-powered category inference (still traditional approach)
+        await cl.Message(content="\n1. LLM-powered category detection...").send()
+        categories = await llm_category_mapping(query)
+        await cl.Message(content=f"   Detected categories: {categories}").send()
         
         # Step 2: Manual filter construction
-        print("\n2. Building manual filter...")
+        await cl.Message(content="\n2. Building manual filter...").send()
         filter_expr = build_filter_expression(categories)
-        print(f"   Filter expression: {filter_expr}")
+        await cl.Message(content=f"   Filter expression: {filter_expr}").send()
         
         # Step 3: Create search client
         search_client = create_search_client()
         
         # Step 4: Execute single hybrid search
-        print("\n3. Executing hybrid search...")
+        await cl.Message(content="\n3. Executing hybrid search...").send()
         search_options = {
             "query_type": "semantic",
             "semantic_configuration_name": "my-semantic-config",
@@ -308,20 +285,18 @@ def traditional_hybrid_search(query):
         
         # Single query execution - no parallel processing
         results = search_client.search(search_text=query, **search_options)
-          # Step 5: Process results manually
-        print("\n4. Processing results...")
+        
+        # Step 5: Process results manually
+        await cl.Message(content="\n4. Processing results...").send()
         documents = []
         total_count = 0
         
         for result in results:
             full_content = result.get("content", "")
             documents.append({
-                "chunk_id": result.get("chunk_id", ""),
                 "title": result.get("chunk_title", ""),
                 "content": full_content,
-                "full_content": full_content,  # Store full content for natural language generation
                 "categories": result.get("category", []),
-                "score": result.get("@search.score", 0.0),
                 "reference_link": result.get("url", "")})
             total_count += 1
         
@@ -331,36 +306,49 @@ def traditional_hybrid_search(query):
         # Step 6: Generate natural language answer
         natural_answer = None
         if documents:
-            natural_answer = generate_natural_language_answer(query, documents)
+            natural_answer = await generate_natural_language_answer(query, documents)
         
         # Display results
-        print(f"\n=== Traditional Search Results ===")
-        print(f"Execution time: {execution_time:.2f} ms")
-        print(f"Total results: {total_count}")
-        print(f"Applied categories filter: {categories}")
-        print(f"Search strategy: Single hybrid query (keyword + vector + semantic)")
-        
+        results_content = f"""
+            ## Traditional Search Results
+
+            **Execution time:** {execution_time:.2f} ms  
+            **Total results:** {total_count}  
+            **Applied categories filter:** {categories}  
+            **Search strategy:** Single hybrid query (keyword + vector + semantic)
+                    """
+        await cl.Message(content=results_content).send()
+                    
         # Display natural language answer if generated
         if natural_answer:
-            print(f"\n=== Natural Language Answer ===")
-            print(natural_answer)
-        
-        print(f"\nTop {min(3, len(documents))} results:")
-        for i, doc in enumerate(documents[:3], 1):
-            print(f"\n{i}. {doc['title']}")
-            print(f"   Score: {doc['score']:.4f}")
-            print(f"   Categories: {doc['categories']}")
-            print(f"   Content: {doc['content']}")
+            answer_content = f"""
+            ## Natural Language Answer
+                {natural_answer}
+            """
+            await cl.Message(content=answer_content).send()
+                    
+            # Display top results
+            top_results_content = f"\n**Top {min(3, len(documents))} results:**\n"
+            for i, doc in enumerate(documents[:3], 1):
+                top_results_content += f"""
+                **{i}. {doc['title']}**  
+                Categories: {doc['categories']}  
+                Content: {doc['content']}
+    """
         
         # Highlight limitations
-        print(f"\n=== Traditional Search Limitations (Even with LLM Answer Generation) ===")
-        print("- Still requires separate LLM calls for categorization AND answer generation")
-        print("- Single query execution (no parallel processing)")
-        print("- Manual filter construction and result processing")
-        print("- No integrated query understanding and breakdown")
-        print("- No conversation context support")
-        print("- Additional complexity and latency from multiple separate LLM calls")
-        print("- Manual orchestration of search -> answer generation pipeline")
+        limitations_content = """
+        ## Traditional Search Limitations (Even with LLM Answer Generation)
+
+        - Still requires separate LLM calls for categorization AND answer generation
+        - Single query execution (no parallel processing)
+        - Manual filter construction and result processing
+        - No integrated query understanding and breakdown
+        - No conversation context support
+        - Additional complexity and latency from multiple separate LLM calls
+        - Manual orchestration of search -> answer generation pipeline
+                """
+        await cl.Message(content=limitations_content).send()
         
         return {
             "execution_time_ms": execution_time,
@@ -371,34 +359,44 @@ def traditional_hybrid_search(query):
         }
         
     except Exception as e:
-        print(f"Error in traditional search: {e}")
+        await cl.Message(content=f"Error in traditional search: {e}").send()
         return None
 
-if __name__ == "__main__":
-    print("Starting Traditional Hybrid Search Demo")
-    print("=" * 50)
-      # Verify configuration
-    if not SEARCH_ENDPOINT or SEARCH_ENDPOINT == "https://your-search-service.search.windows.net":
-        print("⚠️  Please set AZURE_SEARCH_ENDPOINT environment variable")
-        print("   Example: export AZURE_SEARCH_ENDPOINT='https://your-service.search.windows.net'")
-        exit(1)
+@cl.on_message
+async def main(message: cl.Message):
+    """Main Chainlit message handler that processes user queries"""
+    user_query = message.content
     
-    if not OPENAI_ENDPOINT or OPENAI_ENDPOINT == "https://your-openai-service.openai.azure.com":
-        print("⚠️  Please set AZURE_OPENAI_ENDPOINT environment variable")
-        print("   Example: export AZURE_OPENAI_ENDPOINT='https://your-openai.openai.azure.com'")
-        exit(1)
+    # Display welcome message for the first interaction
+    if not hasattr(cl.user_session, "initialized"):
+        welcome_content = """
+    # Traditional Hybrid Search Demo
+
+    Welcome! This demo shows the traditional approach to Azure AI Search with manual filtering and query processing.
+
+    Ask me any Azure architecture question to see how traditional hybrid search works!
+
+    Examples:
+    - "What are the networking requirements for AKS?"
+    - "How do I configure security for Azure containers?"
+    - "What are the best practices for Azure storage?"
+            """
+        await cl.Message(content=welcome_content).send()
+        cl.user_session.set("initialized", True)
     
-    if not SEARCH_API_KEY:
-        print("ℹ️  No search API key provided - attempting to use managed identity")
-    
-    if not OPENAI_API_KEY:
-        print("ℹ️  No OpenAI API key provided - attempting to use managed identity")    # Execute traditional search
-    result = traditional_hybrid_search(USER_QUERY)
+    # Execute traditional search with user query
+    result = await traditional_hybrid_search(user_query)
     
     if result:
-        print(f"\n🏁 Traditional search (with LLM categorization + answer generation) completed in {result['execution_time_ms']:.2f} ms")
-        print(f"   Found {result['result_count']} results using LLM-powered category detection")
-        print(f"   Generated natural language answer: {'Yes' if result.get('natural_answer') else 'No'}")
-        print(f"   Note: Requires multiple separate LLM calls + manual search orchestration")
+        summary_content = f"""
+    ## Search Summary
+
+    🏁 Traditional search (with LLM categorization + answer generation) completed in **{result['execution_time_ms']:.2f} ms**
+
+    - Found **{result['result_count']}** results using LLM-powered category detection
+    - Generated natural language answer: **{'Yes' if result.get('natural_answer') else 'No'}**
+    - Note: Requires multiple separate LLM calls + manual search orchestration
+            """
+        await cl.Message(content=summary_content).send()
     else:
-        print("❌ Traditional search failed")
+        await cl.Message(content="❌ Traditional search failed").send()
