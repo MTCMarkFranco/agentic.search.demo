@@ -42,20 +42,19 @@ load_dotenv(override=True)
 # Based on Azure sample configuration
 SEARCH_ENDPOINT = os.getenv("AZURE_SEARCH_ENDPOINT")
 SEARCH_API_KEY = os.getenv("AZURE_SEARCH_API_KEY")
-INDEX_NAME = os.getenv("AZURE_SEARCH_INDEX", "index-arch-data")
-AGENT_NAME = os.getenv("AZURE_SEARCH_AGENT_NAME", "arch-demo-agent")
+INDEX_NAME = os.getenv("AZURE_SEARCH_INDEX")
+AGENT_NAME = os.getenv("AZURE_SEARCH_AGENT_NAME")
+AZURE_OPENAI_KNOWLEDGE_MODEL = os.getenv("AZURE_OPENAI_KNOWLEDGE_MODEL")
+AZURE_OPENAI_KNOWLEDGE_DEPLOYMENT = os.getenv("AZURE_OPENAI_KNOWLEDGE_DEPLOYMENT")
+
 
 # Azure OpenAI configuration
 AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
-AZURE_OPENAI_GPT_DEPLOYMENT = os.getenv("AZURE_OPENAI_GPT_DEPLOYMENT", "gpt-4o")
-AZURE_OPENAI_GPT_MODEL = os.getenv("AZURE_OPENAI_GPT_MODEL", "gpt-4o")
-AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2025-03-01-preview")
-API_VERSION = "2025-05-01-Preview"
+AZURE_OPENAI_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
+AZURE_OPENAI_MODEL = os.getenv("AZURE_OPENAI_MODEL")
+AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION")
+AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
 
-# Authentication - Use API key for search service, managed identity for OpenAI
-search_credential = AzureKeyCredential(SEARCH_API_KEY) if SEARCH_API_KEY else DefaultAzureCredential()
-openai_credential = DefaultAzureCredential()
-token_provider = get_bearer_token_provider(openai_credential, "https://search.azure.com/.default")
 
 # Hard-coded complex query for demo - multiple intents that agentic search should handle
 USER_QUERY = """What are the networking requirements for AKS when an enterprise hub and spoke 
@@ -71,7 +70,7 @@ def create_knowledge_agent():
     
     try:
         # Create index client for agent management - using API key authentication
-        index_client = SearchIndexClient(endpoint=SEARCH_ENDPOINT, credential=search_credential)
+        index_client = SearchIndexClient(endpoint=SEARCH_ENDPOINT, credential=AzureKeyCredential(SEARCH_API_KEY))
         
         # Define the knowledge agent with Azure OpenAI integration
         agent = KnowledgeAgent(
@@ -80,8 +79,8 @@ def create_knowledge_agent():
                 KnowledgeAgentAzureOpenAIModel(
                     azure_open_ai_parameters=AzureOpenAIVectorizerParameters(
                         resource_url=AZURE_OPENAI_ENDPOINT,
-                        deployment_name=AZURE_OPENAI_GPT_DEPLOYMENT,
-                        model_name=AZURE_OPENAI_GPT_MODEL
+                        model_name=AZURE_OPENAI_KNOWLEDGE_MODEL,
+                        deployment_name=AZURE_OPENAI_KNOWLEDGE_DEPLOYMENT,
                     )
                 )
             ],
@@ -122,7 +121,7 @@ def agentic_retrieval_search(query):
         agent_client = KnowledgeAgentRetrievalClient(
             endpoint=SEARCH_ENDPOINT, 
             agent_name=AGENT_NAME, 
-            credential=search_credential
+            credential=AzureKeyCredential(SEARCH_API_KEY)
         )
         
         # Step 3: Set up messages for conversation
@@ -194,22 +193,7 @@ def agentic_retrieval_search(query):
                     print(f"   {i}. Search Query: \"{search_query}\"")
                     print(f"      Type: {activity_type}")
                     print(f"      Results: {result_count}")
-        
-        # Show unified result summary
-        print(f"\n📋 Unified Result Summary:")
-        if unified_result:
-            # Parse JSON if it's in JSON format
-            try:
-                parsed_result = json.loads(unified_result)
-                if isinstance(parsed_result, list) and len(parsed_result) > 0:
-                    first_result = parsed_result[0].get("content", "")
-                    summary = first_result[:500] + "..." if len(first_result) > 500 else first_result
-                else:
-                    summary = str(parsed_result)[:500] + "..."
-
-            except (json.JSONDecodeError, AttributeError):
-                summary = unified_result[:500] + "..." if len(unified_result) > 500 else unified_result
-            print(f"   {summary}")
+       
         
         # Show top references
         print(f"\nTop {min(3, len(references))} references:")
@@ -221,6 +205,8 @@ def agentic_retrieval_search(query):
             print(f"\n{i}. Document: {doc_key}")
             print(f"   Activity Source: {activity_source}")
             print(f"   Reference ID: {ref_dict.get('id', 'N/A')}")
+          # Generate natural language answer
+        natural_answer = generate_natural_language_answer(query, retrieval_result, activities)
         
         # Highlight agentic advantages
         print(f"\n=== Agentic Search Advantages Demonstrated ===")
@@ -230,6 +216,7 @@ def agentic_retrieval_search(query):
         print("✅ Semantic understanding and ranking")
         print("✅ Unified result synthesis")
         print("✅ Context-aware conversation handling")
+        print("✅ Natural language answer generation from search results")
         
         return {
             "execution_time_ms": execution_time,
@@ -237,50 +224,90 @@ def agentic_retrieval_search(query):
             "activities_executed": len(activities),
             "search_type": "agentic_retrieval",
             "activities": [activity.as_dict() for activity in activities],
-            "unified_result": unified_result
+            "unified_result": unified_result,
+            "natural_answer": natural_answer
         }
         
     except Exception as e:
         print(f"Error in agentic search: {e}")
         return None
 
-def generate_answer_with_openai(messages, retrieval_result):
+# Function replaced by generate_natural_language_answer for better comprehensive answers
+
+def generate_natural_language_answer(query, retrieval_result, activities):
     """
-    Generate an answer using Azure OpenAI with the retrieval result
+    Generate a comprehensive natural language answer using Azure OpenAI
+    based on the agentic search results and retrieved documents
     """
+    print(f"\n6. Generating natural language answer...")
+    
     try:
-        # Create Azure OpenAI client with managed identity
-        azure_openai_token_provider = get_bearer_token_provider(
-            openai_credential, 
-            "https://cognitiveservices.azure.com/.default"
-        )
-        
+        # Create Azure OpenAI client with API key
         client = AzureOpenAI(
             azure_endpoint=AZURE_OPENAI_ENDPOINT,
-            azure_ad_token_provider=azure_openai_token_provider,
-            api_version=AZURE_OPENAI_API_VERSION
+            api_key=AZURE_OPENAI_API_KEY,
+            api_version=AZURE_OPENAI_API_VERSION,
+            azure_deployment=AZURE_OPENAI_DEPLOYMENT
         )
         
-        # Add the retrieval result to messages
-        messages.append({
-            "role": "assistant",
-            "content": retrieval_result.response[0].content[0].text
-        })
+        # Extract relevant content from retrieval results
+        references_content = ""
+        if retrieval_result.references:
+            for i, ref in enumerate(retrieval_result.references[:5], 1):  # Top 5 references
+                ref_dict = ref.as_dict()
+                if 'content' in ref_dict:
+                    references_content += f"\nReference {i}: {ref_dict['content'][:500]}...\n"
         
-        # Generate response using Chat Completions API
+        # Create comprehensive prompt for natural language answer
+        system_prompt = """You are an expert Azure architect and consultant. Based on the provided search results and references, 
+        provide a comprehensive, well-structured answer to the user's question. Your response should:
+        
+        1. Directly address the specific question asked
+        2. Be technically accurate and detailed
+        3. Include practical implementation guidance
+        4. Cover security, networking, and operational considerations
+        5. Be organized with clear sections and bullet points
+        6. Include specific Azure service recommendations where appropriate
+        
+        Format your response in a clear, professional manner suitable for technical stakeholders."""
+        
+        user_prompt = f"""
+        Original Question: {query}
+        
+        Search Results and References:
+        {references_content}
+        
+        Please provide a comprehensive answer to the original question based on these search results.
+        """
+        
+        # Generate comprehensive answer
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ]
+        
         response = client.chat.completions.create(
-            model=AZURE_OPENAI_GPT_MODEL,
-            messages=messages
+            model=AZURE_OPENAI_MODEL,
+            messages=messages,
+            temperature=0.3,  # Lower temperature for more factual responses
+            max_tokens=3000
         )
         
-        wrapped = textwrap.fill(response.choices[0].message.content, width=100)
-        print(f"\n🤖 Generated Answer:")
-        print(wrapped)
+        answer = response.choices[0].message.content
         
-        return response.choices[0].message.content
+        print(f"\n🎯 Natural Language Answer:")
+        print("=" * 80)
+        
+        # Format the answer with proper line breaks
+        formatted_answer = textwrap.fill(answer, width=100, break_long_words=False, break_on_hyphens=False)
+        print(formatted_answer)
+        
+        print("=" * 80)
+        
+        return answer
         
     except Exception as e:
-        print(f"Error generating answer: {e}")
+        print(f"Error generating natural language answer: {e}")
         return None
 
 def compare_with_traditional():
@@ -295,6 +322,8 @@ def compare_with_traditional():
     print("   - Construct complex filter with multiple OR conditions")
     print("   - Execute single query (may miss nuanced enterprise requirements)")
     print("   - Manually merge and rank results")
+    print("   - Parse raw search results to extract relevant information")
+    print("   - Manually synthesize a coherent answer from fragmented results")
     print()
     print("🤖 Agentic Approach:")
     print("   - LLM automatically understands AKS networking context")
@@ -302,6 +331,8 @@ def compare_with_traditional():
     print("   - Automatically identifies AI landing zone implications")
     print("   - Executes parallel searches for comprehensive coverage")
     print("   - Provides unified, semantically ranked results")
+    print("   - Generates natural language answer directly from search results")
+    print("   - Synthesizes coherent, actionable guidance from multiple sources")
 
 if __name__ == "__main__":
     print("Starting Agentic Search Demo")
@@ -329,8 +360,7 @@ if __name__ == "__main__":
     
     # Show what we're comparing against
     compare_with_traditional()
-    
-    # Execute agentic search
+      # Execute agentic search
     result = agentic_retrieval_search(USER_QUERY)
     
     if result:
