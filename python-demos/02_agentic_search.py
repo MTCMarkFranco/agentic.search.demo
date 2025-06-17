@@ -268,7 +268,8 @@ def generate_natural_language_answer(query, retrieval_result, activities):
         4. Cover security, networking, and operational considerations
         5. Be organized with clear sections and bullet points
         6. Include specific Azure service recommendations where appropriate
-        
+        7. Cite which reference sections inform your answer via the reference_link urls
+
         Format your response in a clear, professional manner suitable for technical stakeholders."""
         
         user_prompt = f"""

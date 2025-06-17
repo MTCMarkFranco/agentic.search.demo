@@ -234,7 +234,7 @@ def generate_natural_language_answer(query, documents):
         4. Cover security, networking, and operational considerations as relevant
         5. Be organized with clear sections and bullet points
         6. Include specific Azure service recommendations where appropriate
-        7. Cite which reference sections inform your answer
+        7. Cite which reference sections inform your answer via the reference_link urls
         
         Format your response in a clear, professional manner suitable for technical stakeholders.
         Keep your answer focused and concise while being comprehensive."""
@@ -318,10 +318,11 @@ def traditional_hybrid_search(query):
             documents.append({
                 "chunk_id": result.get("chunk_id", ""),
                 "title": result.get("chunk_title", ""),
-                "content": full_content[:200] + "..." if len(full_content) > 200 else full_content,  # Truncate for display
+                "content": full_content,
                 "full_content": full_content,  # Store full content for natural language generation
                 "categories": result.get("category", []),
-                "score": result.get("@search.score", 0.0)            })
+                "score": result.get("@search.score", 0.0),
+                "reference_link": result.get("url", "")})
             total_count += 1
         
         end_time = time.time()
