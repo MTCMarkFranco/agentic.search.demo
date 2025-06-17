@@ -1,0 +1,39 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Preview Presentation",
+            "type": "shell",
+            "command": "code",
+            "args": ["--preview", "slides/01-introduction.md"],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Open All Slides",
+            "type": "shell",
+            "command": "code",
+            "args": [
+                "slides/01-introduction.md",
+                "slides/02-traditional-rag.md", 
+                "slides/03-agentic-search-advantages.md",
+                "slides/04-implementation-classes.md",
+                "slides/05-semantic-kernel-integration.md"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        }
+    ]
+}

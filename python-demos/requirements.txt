@@ -1,0 +1,22 @@
+# Azure Search Python SDK dependencies for Agentic Retrieval
+# Based on Azure-Samples/azure-search-python-samples quickstart-agentic-retrieval
+# Requires preview packages with 2025-05-01-preview API support
+
+# Core Azure Search SDK with agentic retrieval support
+azure-search-documents>=11.6.0b12  # Use latest preview for knowledge agents
+azure-identity>=1.17.0
+azure-core>=1.30.0
+
+# Azure OpenAI SDK for answer generation
+openai>=1.50.0
+
+# Environment configuration
+python-dotenv>=1.0.0
+
+# HTTP requests (fallback for REST API if SDK unavailable)
+requests>=2.32.0
+
+# Installation notes:
+# Install preview features with:
+# pip install azure-search-documents --pre
+# pip install -r requirements.txt
