@@ -12,13 +12,12 @@ presentation/
 │   ├── 03-agentic-search-advantages.md
 │   ├── 04-implementation-classes.md
 │   └── 05-semantic-kernel-integration.md
-├── code-examples/            # Supporting code samples
-│   ├── hybrid-search/
-│   └── agentic-search/
-├── python-demos/             # Live demonstration scripts
+├── python-demos/             # Complete Python demonstration scripts
 │   ├── 01_traditional_hybrid_search.py
 │   ├── 02_agentic_search.py
 │   ├── requirements.txt
+│   ├── sample.env
+│   ├── UPDATE_SUMMARY.md
 │   └── README.md
 └── README.md                # This file
 ```
@@ -40,27 +39,50 @@ This presentation covers:
 - **Agentic Patterns** - AI-driven search decision making
 - **Chat Completion Integration** - Connecting search results to conversational AI
 
-## 🐍 Live Python Demonstrations
+## 🐍 Complete Python Demonstrations
 
-The `python-demos/` directory contains ready-to-run scripts that demonstrate:
+The `python-demos/` directory contains fully functional, production-ready scripts that demonstrate both traditional and agentic search patterns:
 
 ### Traditional Hybrid Search (`01_traditional_hybrid_search.py`)
-- Manual query analysis and category mapping
-- Single query execution with manual filtering
-- Basic hybrid search (keyword + vector + semantic)
-- Developer-intensive implementation
+- LLM-powered category inference (improved over manual keyword mapping)
+- Manual filter construction and search orchestration
+- Single query execution with basic hybrid search
+- Separate LLM call overhead and complexity
+- Developer-intensive pipeline management
 
 ### Agentic Search (`02_agentic_search.py`)
-- LLM-powered query understanding and breakdown
-- Automatic category inference and filtering
-- Parallel subquery execution
-- Unified semantic ranking and result synthesis
+- **Knowledge Agent Creation**: Automatic setup using Azure SDK's `KnowledgeAgent`
+- **Intelligent Query Planning**: LLM automatically breaks down complex queries
+- **Parallel Execution**: Multiple search activities executed simultaneously
+- **Semantic Ranking**: Unified ranking across all subquery results
+- **Context Awareness**: Conversation history and user intent understanding
+- **Answer Generation**: Integrated Azure OpenAI for response synthesis
+
+**Key Technical Features:**
+- Uses latest Azure Search SDK preview (11.6.0b12+) for agentic retrieval
+- Managed identity authentication for secure access
+- Preview API version (2025-05-01-Preview) for knowledge agents
+- Complete environment setup with `sample.env` template
 
 **Demo Queries:**
 - **Traditional**: `"What are the networking requirements for AKS?"` (simple, focused)
-- **Agentic**: Complex AKS networking query covering enterprise hub-and-spoke topology, Azure AI landing zones, security considerations, and integration patterns
+- **Agentic**: Complex multi-intent AKS networking query covering enterprise hub-and-spoke topology, Azure AI landing zones, security considerations, and integration patterns
 
 Both scripts output execution times and result quality metrics for direct comparison.
+
+### Setup and Dependencies
+
+The Python demos include:
+- **requirements.txt**: All necessary Azure SDK packages including preview versions
+- **sample.env**: Environment configuration template for Azure services
+- **README.md**: Detailed setup instructions, troubleshooting, and technical implementation details
+- **UPDATE_SUMMARY.md**: Latest changes and version information
+
+See the `python-demos/README.md` for complete setup instructions, including:
+- Azure SDK preview package installation
+- Environment configuration with Azure endpoints
+- Managed identity authentication setup
+- Required Azure service permissions and roles
 
 ## 📊 Diagrams and Visuals
 
@@ -72,10 +94,14 @@ Each slide includes:
 
 ## 🚀 Getting Started
 
-1. Navigate to the `slides/` directory
-2. Open markdown files in VS Code for best viewing experience
-3. Use a markdown preview extension for slide presentation
-4. Review code examples in the `code-examples/` directory
+1. **Navigate to the `slides/` directory** for the presentation content
+2. **Open markdown files in VS Code** for best viewing experience
+3. **Use a markdown preview extension** for slide presentation format
+4. **Review and run Python demos** in the `python-demos/` directory:
+   - Follow setup instructions in `python-demos/README.md`
+   - Install preview Azure SDK packages
+   - Configure environment variables with your Azure services
+   - Run both traditional and agentic search demonstrations
 
 ## 📚 Prerequisites
 
@@ -91,6 +117,14 @@ The slides are designed as standalone markdown files that can be:
 - Converted to presentation format using tools like Marp
 - Used as reference documentation
 - Adapted for different audiences
+
+### 💻 From Theory to Practice
+
+- **Slides 1-3**: Conceptual understanding and benefits of agentic search
+- **Slides 4-5**: Technical implementation details with .NET/C# and Semantic Kernel
+- **Python Demos**: Working implementations that you can run and modify
+  - See `python-demos/` for hands-on experience with both traditional and agentic patterns
+  - Complete with setup instructions, environment configuration, and detailed explanations
 
 ---
 
