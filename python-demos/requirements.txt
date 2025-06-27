@@ -3,6 +3,8 @@
 # Requires preview packages with 2025-05-01-preview API support
 
 # Core Azure Search SDK with agentic retrieval support
+
+# this is the SDK that supported agentic search
 azure-search-documents>=11.6.0b12  # Use latest preview for knowledge agents
 azure-identity>=1.17.0
 azure-core>=1.30.0

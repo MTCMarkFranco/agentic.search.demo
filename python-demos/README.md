@@ -22,26 +22,39 @@ pip install -r requirements.txt
 
 ### 2. Environment Configuration
 
-Copy `sample.env` to `.env` and update with your values:
+Copy `.env.example` to `.env` and update with your Azure service values:
 
 ```bash
-cp sample.env .env
+cp .env.example .env
 ```
 
-Edit `.env` with your Azure service endpoints:
+Edit `.env` with your Azure service endpoints and credentials:
 
 ```bash
-# Azure AI Search Service
+# Azure AI Search Configuration
 AZURE_SEARCH_ENDPOINT=https://your-search-service.search.windows.net
+AZURE_SEARCH_API_KEY=your-search-api-key
 AZURE_SEARCH_INDEX=index-arch-data
-AZURE_SEARCH_AGENT_NAME=arch-demo-agent
+AZURE_SEARCH_AGENT_NAME=azure-arch-agent
 
 # Azure OpenAI Configuration
-AZURE_OPENAI_ENDPOINT=https://your-openai-service.openai.azure.com
-AZURE_OPENAI_GPT_DEPLOYMENT=gpt-4o
-AZURE_OPENAI_GPT_MODEL=gpt-4o
-AZURE_OPENAI_API_VERSION=2025-03-01-preview
+AZURE_OPENAI_ENDPOINT=https://your-openai-resource.openai.azure.com
+AZURE_OPENAI_API_KEY=your-openai-api-key
+AZURE_OPENAI_DEPLOYMENT=gpt-4o-deployment
+AZURE_OPENAI_MODEL=gpt-4o
+AZURE_OPENAI_API_VERSION=2024-12-01-preview
+
+# Knowledge Agent Configuration (for agentic search)
+AZURE_OPENAI_KNOWLEDGE_MODEL=gpt-4o
+AZURE_OPENAI_KNOWLEDGE_DEPLOYMENT=gpt-4o-knowledge-deployment
 ```
+
+**Note**: For production environments, leave API keys empty to use managed identity authentication.
+
+**🔒 Security Note**: 
+- Never commit `.env` files to version control
+- The `.env.example` file is provided as a template
+- Use Azure Key Vault or managed identity for production deployments
 
 ### 3. Authentication & Permissions
 

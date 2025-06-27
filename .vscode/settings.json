@@ -1,0 +1,45 @@
+{
+    // Disable Python linting entirely
+    "python.linting.enabled": false,
+    
+    // Alternatively, you can keep linting enabled but disable specific linters
+    // "python.linting.pylintEnabled": false,
+    // "python.linting.flake8Enabled": false,
+    // "python.linting.mypyEnabled": false,
+    // "python.linting.banditEnabled": false,
+    // "python.linting.prospectorEnabled": false,
+    // "python.linting.pydocstyleEnabled": false,
+    // "python.linting.pylamaEnabled": false,
+    
+    // Disable type checking
+    "python.analysis.typeCheckingMode": "off",
+    
+    // Reduce Pylance diagnostics severity
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportGeneralTypeIssues": "none",
+        "reportOptionalSubscript": "none",
+        "reportOptionalMemberAccess": "none",
+        "reportOptionalCall": "none",
+        "reportOptionalIterable": "none",
+        "reportOptionalContextManager": "none",
+        "reportOptionalOperand": "none",
+        "reportTypedDictNotRequiredAccess": "none",
+        "reportPrivateImportUsage": "none",
+        "reportUnknownArgumentType": "none",
+        "reportUnknownLambdaType": "none",
+        "reportUnknownMemberType": "none",
+        "reportUnknownParameterType": "none",
+        "reportUnknownVariableType": "none",
+        "reportUntypedBaseClass": "none",
+        "reportUntypedClassDecorator": "none",
+        "reportUntypedFunctionDecorator": "none",
+        "reportUntypedNamedTuple": "none"
+    },
+    
+    // Disable some editor features that highlight issues
+    "python.analysis.autoImportCompletions": true,
+    "python.analysis.diagnosticMode": "openFilesOnly",
+    
+    // Optional: Disable some general VS Code features that might show warnings
+    "problems.decorations.enabled": false
+}
